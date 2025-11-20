@@ -91,34 +91,47 @@ async function connect() {
   const p = Number(document.getElementById("p").value);
   const g = Number(document.getElementById("g").value);
 
-  // Client's private key 'a'
-  const a = Math.floor(Math.random() * (p - 2)) + 2;
+  // Client's private key 'a'. FIX: Range must be [1, p-1] for Z_p*.
+  const a = Math.floor(Math.random() * (p - 1)) + 1;
 
-  // FIX: Convert all integer arguments to BigInt for WASM compatibility
+  // Convert inputs to BigInt for WASM compatibility
   const g_big = BigInt(g);
   const a_big = BigInt(a);
   const p_big = BigInt(p);
   
-  // Call WASM. It accepts and returns BigInt now.
+  // Call WASM. (x = g^a mod p)
   const x_big = Module._modexp(g_big, a_big, p_big);
   
-  // The server expects standard Numbers, so convert x back and ensure integers are used for the API call
-  const x = Number(x_big);
+  // CRITICAL FIX: Convert x to a string to prevent precision loss 
+  const x = x_big.toString();
 
   document.getElementById("aValue").innerText = a;
 
   // SEND TO SERVER
-  const res = await fetch("http://localhost:3000/dh", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    // Send g, p, and the converted x to the server
-    body: JSON.stringify({ g: g, p: p, x: x })
-  });
+  try {
+    const res = await fetch("http://localhost:3000/dh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // Send x as a string for safety
+      body: JSON.stringify({ g: g, p: p, x: x })
+    });
 
-  const data = await res.json();
+    if (!res.ok) {
+        // Handle HTTP errors (e.g., 500 server error)
+        throw new Error(`Server responded with status: ${res.status}`);
+    }
 
-  document.getElementById("k").innerText = data.K;
-  document.getElementById("y").innerText = data.y;
+    const data = await res.json();
+    
+    // Display results (K and y are strings sent by the server)
+    document.getElementById("k").innerText = data.K;
+    document.getElementById("y").innerText = data.y;
+  } catch (error) {
+    // Basic error display for client-side debugging
+    console.error("Client fetch error:", error);
+    document.getElementById("k").innerText = "ERROR";
+    document.getElementById("y").innerText = "Check Console/Server";
+  }
 }
 </script>
 
