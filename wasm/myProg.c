@@ -1,17 +1,27 @@
-// wasm/myProg.c
-#include <emscripten/emscripten.h>
+#include <stdio.h>
+#include <stdint.h>
 
-EMSCRIPTEN_KEEPALIVE
-int modexp(int a, int b, int p) {
-    long long result = 1;
-    long long base = a % p;
+uint64_t modexp(uint64_t a, uint64_t b, uint64_t n) {
+    uint64_t result = 1;
+    a = a % n;  // reduce 'a' first
 
     while (b > 0) {
-        if (b & 1)
-            result = (result * base) % p;
-
-        base = (base * base) % p;
-        b >>= 1;
+        if (b & 1) {              // if b is odd
+            result = (result * a) % n;
+        }
+        a = (a * a) % n;          // square base
+        b >>= 1;                  // divide b by 2
     }
-    return (int)result;
+
+    return result;
 }
+
+int main() {
+    uint64_t a, b, n;
+    printf("Enter a, b, n: ");
+    scanf("%lu %lu %lu", &a, &b, &n);
+
+    printf("%lu^%lu mod %lu = %lu\n", a, b, n, modexp(a, b, n));
+    return 0;
+}
+

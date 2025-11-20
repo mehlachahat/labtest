@@ -13,7 +13,11 @@ app.use(express.static(path.join(__dirname, '..')));
 
 // SERVER-RANDOM b
 function randomB(p) {
-  return Math.floor(Math.random() * (p - 2)) + 2;
+  // Ensure p is treated as a standard number for Math.random range calculation
+  const range = Number(p) - 2; 
+  // Generate random number (standard JS Number) and convert to BigInt
+  const b = Math.floor(Math.random() * range) + 2; 
+  return BigInt(b); // Return as BigInt
 }
 
 // Import WASM for modexp
@@ -40,10 +44,24 @@ MyProgModule().then(instance => {
 app.post("/dh", (req, res) => {
   const { g, p, x } = req.body;
 
-  // 'wasm' is guaranteed to be defined here
-  const b = randomB(p);
-  const y = wasm._modexp(g, b, p);   // g^b mod p
-  const K = wasm._modexp(x, b, p);   // x^b mod p
+  // 1. Convert incoming Number parameters to BigInt
+  const g_big = BigInt(g);
+  const p_big = BigInt(p);
+  const x_big = BigInt(x);
+
+  // 2. Generate random private key 'b' (returns BigInt)
+  const b_big = randomB(p_big); // Note: We pass p_big to ensure range consistency
+
+  // 3. Perform WASM calculations with BigInts
+  // y = g^b mod p
+  const y_big = wasm._modexp(g_big, b_big, p_big);
+  
+  // K = x^b mod p (Shared Secret)
+  const K_big = wasm._modexp(x_big, b_big, p_big); 
+
+  // 4. Convert results back to standard JavaScript Number for JSON response
+  const y = Number(y_big);
+  const K = Number(K_big);
 
   res.json({ K, y });
 });

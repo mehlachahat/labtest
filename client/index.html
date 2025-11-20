@@ -81,20 +81,29 @@ let Module;
 // LOAD WASM
 window.onload = async () => {
   Module = await MyProgModule({
-    // PATH MODIFIED
     locateFile: f => f === "myProg.wasm" ? "../wasm/myProg.wasm" : f
   });
 };
 
 // CLIENT CONNECT FN
 async function connect() {
+  // Read inputs as Numbers
   const p = Number(document.getElementById("p").value);
   const g = Number(document.getElementById("g").value);
 
-  // Client's private key 'a' (random element of Zp*)
-  // Note: The original implementation in index.html used a range [2, p-1].
+  // Client's private key 'a'
   const a = Math.floor(Math.random() * (p - 2)) + 2;
-  const x = Module._modexp(g, a, p);  // x = g^a mod p
+
+  // FIX: Convert all integer arguments to BigInt for WASM compatibility
+  const g_big = BigInt(g);
+  const a_big = BigInt(a);
+  const p_big = BigInt(p);
+  
+  // Call WASM. It accepts and returns BigInt now.
+  const x_big = Module._modexp(g_big, a_big, p_big);
+  
+  // The server expects standard Numbers, so convert x back and ensure integers are used for the API call
+  const x = Number(x_big);
 
   document.getElementById("aValue").innerText = a;
 
@@ -102,12 +111,12 @@ async function connect() {
   const res = await fetch("http://localhost:3000/dh", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ g, p, x })
+    // Send g, p, and the converted x to the server
+    body: JSON.stringify({ g: g, p: p, x: x })
   });
 
   const data = await res.json();
 
-  // AFTER RESPONSE IS RECEIVED FROM THE SERVER
   document.getElementById("k").innerText = data.K;
   document.getElementById("y").innerText = data.y;
 }
