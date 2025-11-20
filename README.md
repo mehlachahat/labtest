@@ -36,7 +36,7 @@ The implementation strictly follows the Cryptography Lab Test assignment instruc
 ## Project Structure
 
 ```
-dh_lab/
+crypto-wasm-next/
 │
 ├── client/
 │   └── index.html
@@ -127,7 +127,7 @@ To generate MD5 hash of your project folder:
 
 ```bash
 cd ..
-md5sum -b dh_lab/* > digest.txt
+md5sum -b crypto-wasm-next/* > digest.txt
 ```
 
 ---
