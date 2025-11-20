@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Diffie–Hellman (WASM)</title>
+
+  <style>
+    body {
+      background: #cfe0ff;
+      font-family: Arial, sans-serif;
+      padding: 40px;
+    }
+    .main-box {
+      width: 600px;
+      margin: auto;
+      padding: 30px;
+      background: #d6e4ff;
+      border-radius: 15px;
+      border: 2px solid #9bb6e3;
+    }
+    label {
+      font-size: 20px;
+      display: block;
+      margin-top: 20px;
+    }
+    input {
+      width: 200px;
+      height: 30px;
+      font-size: 18px;
+      padding: 5px;
+      border-radius: 6px;
+      border: 1px solid #555;
+    }
+    button {
+      margin-top: 30px;
+      width: 150px;
+      height: 40px;
+      background: white;
+      font-size: 18px;
+      border-radius: 8px;
+      border: 2px solid #333;
+      cursor: pointer;
+    }
+    .output {
+      margin-top: 40px;
+      border: 2px solid #333;
+      width: 260px;
+      padding: 15px;
+      font-size: 20px;
+      background: #d6e4ff;
+    }
+  </style>
+</head>
+<body>
+
+<div class="main-box">
+
+  <label>Enter the Value of p:</label>
+  <input id="p" type="number" value="23">
+
+  <label>Enter the Value of g:</label>
+  <input id="g" type="number" value="5">
+
+  <center><button onclick="connect()">CONNECT</button></center>
+
+  <center>
+    <div class="output">
+      <div>K = <span id="k">—</span></div>
+      <div>y = <span id="y">—</span></div>
+      <div>a = <span id="aValue">—</span></div>
+    </div>
+  </center>
+
+</div>
+
+<script src="../wasm/myProg.js"></script>
+
+<script>
+let Module;
+
+// LOAD WASM
+window.onload = async () => {
+  Module = await MyProgModule({
+    // PATH MODIFIED
+    locateFile: f => f === "myProg.wasm" ? "../wasm/myProg.wasm" : f
+  });
+};
+
+// CLIENT CONNECT FN
+async function connect() {
+  const p = Number(document.getElementById("p").value);
+  const g = Number(document.getElementById("g").value);
+
+  // Client's private key 'a' (random element of Zp*)
+  // Note: The original implementation in index.html used a range [2, p-1].
+  const a = Math.floor(Math.random() * (p - 2)) + 2;
+  const x = Module._modexp(g, a, p);  // x = g^a mod p
+
+  document.getElementById("aValue").innerText = a;
+
+  // SEND TO SERVER
+  const res = await fetch("http://localhost:3000/dh", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ g, p, x })
+  });
+
+  const data = await res.json();
+
+  // AFTER RESPONSE IS RECEIVED FROM THE SERVER
+  document.getElementById("k").innerText = data.K;
+  document.getElementById("y").innerText = data.y;
+}
+</script>
+
+</body>
+</html>
