@@ -1,78 +1,145 @@
-# Diffie–Hellman Key Exchange (Cryptography Lab Assignment)
+# Diffie–Hellman Key Exchange (WASM + Node.js + JavaScript)
 
-This project implements the Diffie–Hellman shared secret key establishment between a client and a server, exactly according to the given lab assignment requirements.
+This project implements the Diffie–Hellman shared secret key exchange between a client and server, using WebAssembly (WASM) compiled from the provided `myProg.c` file.  
+The implementation strictly follows the Cryptography Lab Test assignment instructions.
 
-The computation of:
-- g^a mod p  
-- g^b mod p  
-- x^b mod p  
+---
 
-is performed using WebAssembly (WASM) compiled from the provided `myProg.c`.
+## Overview
+
+### Client Responsibilities
+- Accept inputs **p** and **g** from the user.
+- Generate private key **a ∈ Z\*_p** using JavaScript.
+- Compute:
+  ```
+  x = g^a mod p
+  ```
+  using **WebAssembly (WASM)**.
+- Send `<g, p, x>` to the server.
+- Display:
+  - Private key `a`
+  - Server public key `y`
+  - Shared key `K`
+
+### Server Responsibilities
+- Receive `<g, p, x>` from the client.
+- Generate private key **b ∈ Z\*_p** using JavaScript.
+- Compute using WASM:
+  ```
+  y = g^b mod p
+  K = x^b mod p
+  ```
+- Return `<K, y>` to the client.
 
 ---
 
 ## Project Structure
 
+```
 dh_lab/
+│
 ├── client/
 │   └── index.html
+│
 ├── client_server/
-│   └── client_server.js
+│   ├── client_server.js
+│   └── package.json
+│
 ├── server/
-│   └── server.js
+│   ├── server.js
+│   └── package.json
+│
 └── wasm/
     ├── myProg.c
     └── myProg.wasm
+```
 
 ---
 
-## How to Run
+## Compiling WebAssembly
 
-### 1. Compile WebAssembly
+Inside the `wasm/` folder, compile the provided C file:
 
-Inside the `wasm/` folder:
-
+```bash
 emcc myProg.c -O3   -s WASM_BIGINT=1   -s STANDALONE_WASM=1   -s EXPORTED_FUNCTIONS="['_modexp']"   -Wl,--no-entry   -o myProg.wasm
+```
 
-### 2. Start Backend Server
+This generates:
 
-cd server  
-npm install  
-node server.js  
-
-Runs at: http://localhost:5000
-
-### 3. Start Frontend Server
-
-cd client_server  
-npm install  
-node client_server.js  
-
-Runs at: http://localhost:3000
+```
+myProg.wasm
+```
 
 ---
 
-## Usage
+## Running the Backend Server
 
-1. Open http://localhost:3000  
-2. Enter p and g  
-3. Click Compute  
-4. You will see:  
-   - a (client private key)  
-   - y (server public key)  
-   - K (shared secret key)
+```bash
+cd server
+npm install
+node server.js
+```
+
+Backend runs at:
+
+```
+http://localhost:5000
+```
+
+---
+
+## Running the Frontend Server
+
+```bash
+cd client_server
+npm install
+node client_server.js
+```
+
+Frontend runs at:
+
+```
+http://localhost:3000
+```
+
+---
+
+## Usage Instructions
+
+1. Open browser and visit:
+
+   ```
+   http://localhost:3000
+   ```
+
+2. Enter values for **p** and **g**.
+3. Click **Compute**.
+4. The page will display:
+   - Client private key `a`
+   - Server public key `y`
+   - Shared secret key `K`
 
 ---
 
 ## MD5 Digest for Submission
 
-cd ..  
+To generate MD5 hash of your project folder:
+
+```bash
+cd ..
 md5sum -b dh_lab/* > digest.txt
+```
+
+---
+
+## Notes
+- WebAssembly is used for all modular exponentiation operations.
+- `WASM_BIGINT=1` allows 64-bit integer (`uint64_t`) operations safely.
+- The project follows the assignment specification exactly.
 
 ---
 
 ## Author
-
 Satish Kumar  
-Introduction to Cryptography Lab Test  
+Introduction to Cryptography – Lab Test  
 Session: July–Dec 2025
