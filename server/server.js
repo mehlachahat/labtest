@@ -44,24 +44,28 @@ MyProgModule().then(instance => {
 app.post("/dh", (req, res) => {
   const { g, p, x } = req.body;
 
-  // 1. Convert incoming Number parameters to BigInt
+  // 1. Convert incoming Number parameters to BigInt for WASM compatibility
   const g_big = BigInt(g);
   const p_big = BigInt(p);
-  const x_big = BigInt(x);
+  const x_big = BigInt(x); // Client's public key (g^a mod p)
 
-  // 2. Generate random private key 'b' (returns BigInt)
-  const b_big = randomB(p_big); // Note: We pass p_big to ensure range consistency
+  // 2. Generate server's private key 'b' (must return BigInt)
+  const b_big = randomB(p_big); 
 
-  // 3. Perform WASM calculations with BigInts
-  // y = g^b mod p
+  // 3. WASM Calculation 1: Server's Public Key (y = g^b mod p)
   const y_big = wasm._modexp(g_big, b_big, p_big);
   
-  // K = x^b mod p (Shared Secret)
+  // 4. WASM Calculation 2: Shared Secret Key (K = x^b mod p)
+  // CRITICAL: Must use x_big and b_big
   const K_big = wasm._modexp(x_big, b_big, p_big); 
 
-  // 4. Convert results back to standard JavaScript Number for JSON response
+  // 5. Convert results back to standard JavaScript Number for JSON response
   const y = Number(y_big);
   const K = Number(K_big);
 
+  // DEBUGGING: Check your console to verify K is 37
+  // console.log("DEBUG: Final K should be 37. K =", K); 
+
+  // 6. Send the correct values
   res.json({ K, y });
 });
